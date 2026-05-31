@@ -88,7 +88,9 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         ])
 
-    await update.message.reply_text(
-        response,
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    chunks = [response[i:i+4000] for i in range(0, len(response), 4000)]
+    for i, chunk in enumerate(chunks):
+        if i == len(chunks) - 1:
+            await update.message.reply_text(chunk, reply_markup=InlineKeyboardMarkup(keyboard))
+        else:
+            await update.message.reply_text(chunk)
