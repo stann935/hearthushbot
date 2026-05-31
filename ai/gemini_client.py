@@ -55,7 +55,7 @@ Coach (respond now):"""
             }
         ],
         "generationConfig": {
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": 2048,
             "temperature": 0.75,
             "topP": 0.9
         }
