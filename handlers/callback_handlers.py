@@ -131,5 +131,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 system_context,
                 history
             )
-            await query.message.reply_text(response)
+            chunks = [response[i:i+4000] for i in range(0, len(response), 4000)]
+            for chunk in chunks:
+                await query.message.reply_text(chunk)
             db.save_message(user.id, "assistant", response, category)
