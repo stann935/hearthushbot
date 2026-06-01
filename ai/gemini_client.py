@@ -24,49 +24,39 @@ def check_for_crisis(text):
     return any(kw in text_lower for kw in CRISIS_KEYWORDS)
 
 def get_ai_response(user_message, system_context, conversation_history=None):
-    if not config.GEMINI_API_KEY:
+    if not config.GROQ_API_KEY:
         return "I'm not fully connected yet. Please check the API key setup."
 
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{config.GEMINI_MODEL}:generateContent"
-        f"?key={config.GEMINI_API_KEY}"
-    )
+    url = "https://api.groq.com/openai/v1/chat/completions"
 
-    history_text = ""
+    messages = [{"role": "system", "content": system_context}]
+
     if conversation_history:
         recent = conversation_history[-(config.MAX_CONTEXT_MESSAGES * 2):]
         for msg in recent:
-            role = "User" if msg["role"] == "user" else "Coach"
-            history_text += f"{role}: {msg['content']}\n"
+            messages.append({"role": msg["role"], "content": msg["content"]})
 
-    full_prompt = f"""{system_context}
+    messages.append({"role": "user", "content": user_message})
 
-{('Conversation so far:\n' + history_text) if history_text else ''}
-
-User: {user_message}
-
-Coach (respond now):"""
+    headers = {
+        "Authorization": f"Bearer {config.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": full_prompt}]
-            }
-        ],
-        "generationConfig": {
-            "maxOutputTokens": 2048,
-            "temperature": 0.75,
-            "topP": 0.9
-        }
+        "model": "llama-3.3-70b-versatile",
+        "messages": messages,
+        "max_tokens": 2048,
+        "temperature": 0.75,
+        "top_p": 0.9
     }
 
     try:
-        response = requests.post(url, json=payload, timeout=30)
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
         data = response.json()
 
-        if "candidates" in data:
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        if "choices" in data:
+            return data["choices"][0]["message"]["content"].strip()
         elif "error" in data:
             return f"AI error: {data['error']['message']}"
         else:
